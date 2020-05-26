@@ -1,0 +1,335 @@
+<html>
+  <head>
+    <title>Drag</title>
+    <style>
+      .reward {
+        height: 100px;
+        width: 100px;
+        background: cyan;
+        margin: 10px;
+        box-shadow: 0px 2px 5px 1px black;
+        position: relative;
+        padding: 10px;
+        border-radius: 10px;
+      }
+
+      .reward:hover {
+        box-shadow: 0px 2px 10px 1px gray;
+        cursor: pointer;
+      }
+
+      .reward:active {
+        background: darkcyan;
+        box-shadow: 0px 2px 10px 10px yellow;
+      }
+
+      .rewardsBox {
+        box-shadow: 0 0 5px 0 black;
+        padding: 10px;
+        background: #eeefff;
+      }
+
+      .box {
+        box-shadow: 0px 0px 5px 0px black;
+        margin: 20px;
+        padding: 20px;
+        flex-direction: row;
+        display: flex;
+        height: 850px;
+        user-select: none;
+      }
+
+      .categoryLane {
+        margin: 30px;
+        width: 150px;
+        background: #bbbccc;
+        padding: 10px;
+      }
+
+      .categoryBox {
+        background: #dddeee;
+        display: flex;
+        margin: 0 25px 0 25px;
+      }
+
+      .categoryLabel {
+        height: 20px;
+        position: relative;
+        top: 0;
+        left: 50%;
+      }
+
+      .gu-transit {
+        box-shadow: 10px 10px;
+        visibility: hidden;
+      }
+
+      .gu-mirror {
+        box-shadow: 10px 10px 10px 10px yellow;
+      }
+
+      #deleteX {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 10px;
+      }
+
+      #deleteX:hover {
+        background: red;
+      }
+
+      .deleteButton {
+        visibility: hidden;
+      }
+
+      .myButtons {
+        height: 100%;
+        width: 110px;
+        margin: 20px;
+      }
+
+      .myButton {
+        height: 100px;
+        width: 100px;
+        position: relative;
+        margin: 10px;
+        border-radius: 20px;
+        outline: none;
+      }
+      .myButton:hover {
+        box-shadow: 0px 2px 10px 1px gray;
+        cursor: pointer;
+      }
+      .myButton:active {
+        background-color: #bbbccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="box" class="box">
+      <div id="rewardsBox" class="rewardsBox">
+        <span id="dragAnchor">Rewards</span>
+        <div id="r1" class="reward">
+          R1
+          <span class="deleteButton" onclick="deleteReward(this)" id="deleteX">
+            X
+          </span>
+        </div>
+        <div id="r2" class="reward">
+          R2
+          <span class="deleteButton" onclick="deleteReward(this)" id="deleteX">
+            X
+          </span>
+        </div>
+        <div id="r3" class="reward">
+          R3
+          <span class="deleteButton" onclick="deleteReward(this)" id="deleteX">
+            X
+          </span>
+        </div>
+        <div id="r4" class="reward">
+          R4
+          <span class="deleteButton" onclick="deleteReward(this)" id="deleteX">
+            X
+          </span>
+        </div>
+        <div id="r5" class="reward">
+          R5
+          <span class="deleteButton" onclick="deleteReward(this)" id="deleteX">
+            X
+          </span>
+        </div>
+      </div>
+      <div class="categoryBox">
+        <div class="categoryLabel">Category</div>
+        <div id="c1" class="categoryLane">
+          C1
+          <div class="category"></div>
+        </div>
+        <div id="c2" class="categoryLane">
+          C2
+          <div class="category"></div>
+        </div>
+        <div id="c3" class="categoryLane">
+          C3
+          <div class="category"></div>
+        </div>
+        <div id="c4" class="categoryLane">
+          C4
+          <div class="category"></div>
+        </div>
+        <div id="c5" class="categoryLane">
+          C5
+          <div class="category"></div>
+        </div>
+      </div>
+      <div class="myButtons">
+        <button class="myButton" onclick="saveState()">
+          Save state to local storage
+        </button>
+        <button class="myButton" onclick="loadState()">
+          Load state from local storage
+        </button>
+        <button class="myButton" onclick="undoState()">
+          Undo
+        </button>
+        <button class="myButton" onclick="redoState()">
+          Redo
+        </button>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.2/dragula.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
+    <script>
+      const shouldCopy = (el, source) => {
+        if (source.id === "rewardsBox") {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+      // initializing options
+      const options = {
+        copy: shouldCopy,
+        revertOnSpill: true,
+        mirrorContainer: document.querySelector("#r1"),
+      };
+
+      // setting up containers that we will use with Dragula
+      const containers = [
+        document.querySelector("#rewardsBox"),
+        document.querySelector("#c1"),
+        document.querySelector("#c2"),
+        document.querySelector("#c3"),
+        document.querySelector("#c4"),
+        document.querySelector("#c5"),
+      ];
+
+      const drake = dragula(containers, options);
+
+      window.state = [];
+
+      // gets current state and puts it into window.state
+      const getState = () => {
+        counter = 0;
+        window.state = [];
+        const board = document.getElementsByClassName("categoryLane");
+        _.each(board, (lane) => {
+          window.state.push([]);
+          const els = lane.querySelectorAll(".reward");
+          _.each(els, (el) => {
+            if (el) {
+              window.state[counter].push(el.id);
+            }
+          });
+          counter++;
+        });
+      };
+
+      getState();
+      stateStack = [window.state];
+      stateUndoStack = [];
+
+      // sets the board based on a given state
+      const setBoardByState = (states) => {
+        if (!states) {
+          return;
+        }
+        const containers = [
+          document.getElementById("c1"),
+          document.getElementById("c2"),
+          document.getElementById("c3"),
+          document.getElementById("c4"),
+          document.getElementById("c5"),
+        ];
+        let i;
+        let j;
+
+        for (i = 0; i < 5; i++) {
+          while (containers[i].children.length > 0) {
+            containers[i].children[0].remove();
+          }
+        }
+
+        for (i = 0; i < 5; i++) {
+          for (j = 0; j < states[i].length; j++) {
+            const newReward = document
+              .getElementById(states[i][j])
+              .cloneNode(true);
+            newReward.querySelector("span").style.visibility = "visible";
+            containers[i].appendChild(newReward);
+          }
+        }
+      };
+
+      // what will happen when a "drop" occurs
+      drake.on("drop", (el, target, source, sibling) => {
+        let isDuplicate = false;
+        let counter = 0;
+        _.each(target.children, (childEl) => {
+          if (el.id === childEl.id && counter > 0) {
+            isDuplicate = true;
+          }
+          if (el.id === childEl.id) {
+            counter++;
+          }
+        });
+
+        if (target.id === "rewardsBox" || isDuplicate) {
+          el.remove();
+        } else {
+          const x = el.getElementsByClassName("deleteButton")[0];
+          x.style.visibility = "visible";
+          getState();
+          stateStack.push(window.state);
+          stateUndoStack = [];
+        }
+      });
+
+      const deleteReward = (el) => {
+        el.parentElement.remove();
+        getState();
+        stateStack.push(window.state);
+      };
+
+      // local save
+      const saveState = () => {
+        getState();
+        let JSONstate = JSON.stringify(window.state);
+        localStorage.setItem("state", JSONstate);
+        console.log(JSON.parse(localStorage["state"]));
+      };
+
+      // local load
+      const loadState = () => {
+        var loadedState = localStorage.getItem("state");
+        let newState = JSON.parse(loadedState);
+        stateStack.push(newState);
+        setBoardByState(newState);
+      };
+
+      const undoState = () => {
+        if (stateStack.length > 0) {
+          let currState = stateStack.pop();
+          stateUndoStack.push(currState);
+          currState = stateStack[stateStack.length - 1];
+          setBoardByState(currState);
+        } else {
+          alert("Can't Undo");
+        }
+      };
+
+      const redoState = () => {
+        if (stateUndoStack.length > 0) {
+          const currState = stateUndoStack.pop();
+          stateStack.push(currState);
+          setBoardByState(currState);
+        } else {
+          alert("Can't Redo");
+        }
+      };
+    </script>
+  </body>
+</html>
